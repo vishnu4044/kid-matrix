@@ -32,6 +32,18 @@ def _get_owned_session(session_id: int, parent_id: int) -> PracticeSession | Non
     return session
 
 
+def _latest_answers_by_question(question_ids: list[int]) -> dict[int, Answer]:
+    if not question_ids:
+        return {}
+    all_answers = (
+        Answer.query.filter(Answer.question_id.in_(question_ids)).order_by(Answer.created_at.asc()).all()
+    )
+    latest: dict[int, Answer] = {}
+    for a in all_answers:
+        latest[a.question_id] = a  # last write wins, in chronological order
+    return latest
+
+
 def _build_questions(payload: dict) -> list[dict]:
     ptype = payload["type"]
     config = payload.get("config") or {}
@@ -195,15 +207,7 @@ def complete_practice(session_id: int):
         return error_response("NOT_FOUND", "Practice session not found", 404)
 
     question_ids = [q.id for q in session.questions]
-    latest_by_question: dict[int, Answer] = {}
-    if question_ids:
-        all_answers = (
-            Answer.query.filter(Answer.question_id.in_(question_ids))
-            .order_by(Answer.created_at.asc())
-            .all()
-        )
-        for a in all_answers:
-            latest_by_question[a.question_id] = a  # last write wins, in chronological order
+    latest_by_question = _latest_answers_by_question(question_ids)
 
     correct_count = sum(1 for a in latest_by_question.values() if a.is_correct)
     total = len(question_ids) or 1
@@ -233,3 +237,33 @@ def complete_practice(session_id: int):
     result = session.to_dict()
     result["correct_count"] = correct_count
     return result, 200
+
+
+@practice_bp.get("/<int:session_id>/results")
+@jwt_required()
+def get_practice_results(session_id: int):
+    """Per-question breakdown so a parent can see exactly which letters/answers were
+    wrong, not just the aggregate score (spec section 33: "click a session to see details")."""
+    parent_id = int(get_jwt_identity())
+    session = _get_owned_session(session_id, parent_id)
+    if not session:
+        return error_response("NOT_FOUND", "Practice session not found", 404)
+
+    question_ids = [q.id for q in session.questions]
+    latest_by_question = _latest_answers_by_question(question_ids)
+
+    results = []
+    for question in session.questions:
+        answer = latest_by_question.get(question.id)
+        results.append(
+            {
+                "question_id": question.id,
+                "type": question.type,
+                "prompt": question.prompt,
+                "target": question.target,
+                "is_correct": answer.is_correct if answer else None,
+                "feedback": answer.feedback if answer else None,
+            }
+        )
+
+    return {"session": session.to_dict(include_questions=False), "results": results}, 200

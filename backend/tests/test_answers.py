@@ -103,6 +103,31 @@ def test_complete_practice_computes_score(client, auth_headers):
     assert body["score"] == 100.0
 
 
+def test_results_show_per_question_correctness(client, auth_headers):
+    child = create_child(client, auth_headers)
+    session = create_session(client, auth_headers, child["id"], count=5)
+    questions = session["questions"]
+
+    client.post(
+        f"/api/practice/{session['id']}/answers",
+        json={"question_id": questions[0]["id"], "image_data_url": inked_canvas_data_url()},
+        headers=auth_headers,
+    )
+    client.post(
+        f"/api/practice/{session['id']}/answers",
+        json={"question_id": questions[1]["id"], "image_data_url": blank_canvas_data_url()},
+        headers=auth_headers,
+    )
+
+    resp = client.get(f"/api/practice/{session['id']}/results", headers=auth_headers)
+    assert resp.status_code == 200
+    body = resp.get_json()
+    results_by_id = {r["question_id"]: r for r in body["results"]}
+    assert results_by_id[questions[0]["id"]]["is_correct"] is True
+    assert results_by_id[questions[1]["id"]]["is_correct"] is False
+    assert results_by_id[questions[1]["id"]]["target"] == questions[1]["target"]
+
+
 def test_answers_require_owned_session(client, auth_headers):
     child = create_child(client, auth_headers)
     session = create_session(client, auth_headers, child["id"])

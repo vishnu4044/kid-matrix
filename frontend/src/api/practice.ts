@@ -28,3 +28,19 @@ export async function completePractice(id: number): Promise<PracticeSession> {
   const { data } = await apiClient.post<PracticeSession>(`/practice/${id}/complete`);
   return data;
 }
+
+export interface QuestionResult {
+  question_id: number;
+  type: string;
+  prompt: string;
+  target: string;
+  is_correct: boolean | null;
+  feedback: string | null;
+}
+
+export async function fetchPracticeResults(
+  id: number,
+): Promise<{ session: PracticeSession; results: QuestionResult[] }> {
+  const { data } = await apiClient.get(`/practice/${id}/results`);
+  return data;
+}

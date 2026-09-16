@@ -2,18 +2,21 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "../components/Card";
 import { Button } from "../components/Button";
-import { fetchPractice } from "../api/practice";
+import { fetchPracticeResults } from "../api/practice";
 import { fetchChild } from "../api/children";
 
 export function PracticeSummary() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
 
-  const { data: session, isLoading } = useQuery({
-    queryKey: ["practice", sessionId],
-    queryFn: () => fetchPractice(Number(sessionId)),
+  const { data, isLoading } = useQuery({
+    queryKey: ["practiceResults", sessionId],
+    queryFn: () => fetchPracticeResults(Number(sessionId)),
     enabled: Boolean(sessionId),
   });
+  const session = data?.session;
+  const results = data?.results ?? [];
+
   const { data: child } = useQuery({
     queryKey: ["child", session?.child_id],
     queryFn: () => fetchChild(session!.child_id),
@@ -22,7 +25,7 @@ export function PracticeSummary() {
 
   if (isLoading || !session) return <p className="text-ink-soft">Loading...</p>;
 
-  const correct = session.correct_count ?? Math.round(((session.score ?? 0) / 100) * session.total_questions);
+  const correct = session.correct_count ?? results.filter((r) => r.is_correct).length;
   const accuracy = session.score ?? 0;
 
   return (
@@ -57,13 +60,29 @@ export function PracticeSummary() {
       </Card>
 
       <Card className="mt-4 p-6">
-        <h3 className="font-display text-lg font-bold text-ink">What They Practiced</h3>
-        <p className="mt-2 capitalize text-ink-soft">{session.type}</p>
+        <h3 className="font-display text-lg font-bold text-ink">Question by Question</h3>
+        <p className="mt-1 text-sm text-ink-soft">
+          Every attempt is remembered here and factored into {child?.name ?? "their"} progress.
+        </p>
+        <div className="mt-4 grid grid-cols-5 gap-2">
+          {results.map((r) => (
+            <div
+              key={r.question_id}
+              title={r.feedback ?? undefined}
+              className={`flex aspect-square flex-col items-center justify-center rounded-xl text-sm font-bold ${
+                r.is_correct ? "bg-brand-green text-white" : "bg-brand-pink text-white"
+              }`}
+            >
+              <span className="text-base">{r.target}</span>
+              <span>{r.is_correct ? "✓" : "✕"}</span>
+            </div>
+          ))}
+        </div>
       </Card>
 
       <div className="mt-6 flex gap-3">
-        <Button variant="secondary" fullWidth onClick={() => navigate(`/dashboard/${session.child_id}`)}>
-          View Details
+        <Button variant="secondary" fullWidth onClick={() => navigate(`/progress`)}>
+          View Progress
         </Button>
         <Button fullWidth onClick={() => navigate(`/practice/create/${session.child_id}`)}>
           Create More Practice

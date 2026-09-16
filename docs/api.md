@@ -97,6 +97,12 @@ relevant subject/topic on every submission. 201 → `{ id, is_correct, confidenc
 Aggregates the latest answer per question, computes `score` (% correct), sets
 `status=completed`, `completed_at=now`. 200 → session + `correct_count`.
 
+### `GET /api/practice/:id/results`
+200 → `{ session, results: [{ question_id, type, prompt, target, is_correct, feedback }] }` —
+per-question breakdown (which letters/answers were right vs. wrong), not just the aggregate
+score. Used by the Practice Summary screen so wrong answers are visibly remembered in history,
+not just folded into an accuracy percentage.
+
 ## AI (implemented — requires `OPENAI_API_KEY`; 503 `AI_UNAVAILABLE` otherwise)
 
 ### `POST /api/ai/generate-practice`
