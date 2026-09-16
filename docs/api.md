@@ -66,6 +66,11 @@ correct, accuracy, status, last_practiced}]} }`. `status` is one of `mastered` (
 200 → `[{ id, type, title, difficulty, status, started_at, completed_at, score,
 total_questions }, ...]` — completed sessions only, newest first.
 
+### `GET /api/children/:id/tutor-history`
+200 → `[{ id, child_id, question, response, created_at }, ...]` — this child's saved AI Tutor
+conversation, oldest first. Excludes `AIInteraction` rows logged from `/api/ai/generate-practice`
+(`interaction_type="generate_practice"`) — only real tutor Q&A shows here.
+
 ## Practice (implemented)
 
 ### `POST /api/practice`
@@ -106,7 +111,9 @@ persisted the same way as `POST /api/practice` (`type="ai"`). 201 → session.
 Body: `{ child_id?, question }`. Builds the same child context (if `child_id` given) plus up
 to 3 relevant snippets from the FAISS-backed curriculum corpus (`app/services/
 curriculum_retrieval.py`) when the question seems to call for general teaching guidance.
-200 → `{ response }`. Logged to `AIInteraction`.
+200 → `{ response }`. Logged to `AIInteraction` (`interaction_type="tutor"`) and retrievable
+per child via `GET /api/children/:id/tutor-history` — each child has their own saved
+conversation, not a shared/global chat.
 
 ### `POST /api/ai/recommendations`
 Body: `{ child_id }`. 200 → `{ recommendation, suggested_type, suggested_config }`.

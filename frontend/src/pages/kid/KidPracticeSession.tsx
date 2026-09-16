@@ -7,9 +7,24 @@ import { HandwritingCanvas, type HandwritingCanvasHandle } from "../../features/
 import { fetchPractice, submitAnswer, completePractice } from "../../api/practice";
 import { fetchChild } from "../../api/children";
 import { useSpeak } from "../../hooks/useSpeak";
-import type { AnswerResult } from "../../types/practice";
+import type { AnswerResult, Question } from "../../types/practice";
 
 type Phase = "writing" | "feedback" | "complete";
+
+function answerPhrase(question: Question): string {
+  switch (question.type) {
+    case "letter":
+      return `The letter is ${question.target}`;
+    case "number":
+      return `The number is ${question.target}`;
+    case "math":
+      return `The answer is ${question.target}`;
+    case "shape":
+      return `That's a ${question.target}`;
+    default:
+      return `The answer is ${question.target}`;
+  }
+}
 
 export function KidPracticeSession() {
   const { childId, sessionId } = useParams<{ childId: string; sessionId: string }>();
@@ -49,6 +64,7 @@ export function KidPracticeSession() {
         tryAgain: prev.tryAgain + (result.is_correct ? 0 : 1),
       }));
       setPhase("feedback");
+      speak(answerPhrase(question));
     },
   });
 

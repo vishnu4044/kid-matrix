@@ -112,6 +112,7 @@ def generate_practice():
             parent_id=parent_id,
             question=data["prompt"],
             response=generated["title"],
+            interaction_type="generate_practice",
         )
     )
     log_event("ai_practice_generated", parent_id=parent_id, child_id=child.id)

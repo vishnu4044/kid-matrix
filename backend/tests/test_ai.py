@@ -78,6 +78,57 @@ def test_tutor_requires_api_key(client, auth_headers):
     assert resp.status_code == 503
 
 
+def test_tutor_history_persists_per_child(client, auth_headers, with_fake_api_key):
+    child = create_child(client, auth_headers)
+
+    with patch("app.services.curriculum_retrieval.retrieve", return_value=[]), patch(
+        "app.services.openai_service.OpenAIService.generate_tutor_response",
+        return_value="Emma is doing great with letters.",
+    ):
+        client.post(
+            "/api/ai/tutor",
+            json={"child_id": child["id"], "question": "How is Emma doing?"},
+            headers=auth_headers,
+        )
+
+    resp = client.get(f"/api/children/{child['id']}/tutor-history", headers=auth_headers)
+    assert resp.status_code == 200
+    body = resp.get_json()
+    assert len(body) == 1
+    assert body[0]["question"] == "How is Emma doing?"
+    assert body[0]["response"] == "Emma is doing great with letters."
+
+
+def test_tutor_history_excludes_practice_generation_logs(client, auth_headers, with_fake_api_key):
+    child = create_child(client, auth_headers)
+
+    fake_response = {
+        "title": "Addition Practice",
+        "subject": "math",
+        "questions": [{"type": "math", "prompt": "1 + 1 = ?", "expected_answer": "2"}],
+    }
+    with patch("app.services.openai_service.OpenAIService.generate_practice", return_value=fake_response):
+        client.post(
+            "/api/ai/generate-practice",
+            json={"child_id": child["id"], "prompt": "Give Emma addition"},
+            headers=auth_headers,
+        )
+
+    resp = client.get(f"/api/children/{child['id']}/tutor-history", headers=auth_headers)
+    assert resp.get_json() == []
+
+
+def test_tutor_history_requires_ownership(client, auth_headers):
+    from tests.conftest import register
+
+    other = register(client, name="Other", email="other6@example.com")
+    other_headers = {"Authorization": f"Bearer {other.get_json()['access_token']}"}
+    other_child = create_child(client, other_headers)
+
+    resp = client.get(f"/api/children/{other_child['id']}/tutor-history", headers=auth_headers)
+    assert resp.status_code == 404
+
+
 def test_tutor_uses_child_context(client, auth_headers, with_fake_api_key):
     child = create_child(client, auth_headers)
     with patch("app.services.curriculum_retrieval.retrieve", return_value=[]), patch(

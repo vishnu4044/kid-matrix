@@ -43,3 +43,16 @@ export async function fetchChildHistory(id: number): Promise<HistorySession[]> {
   const { data } = await apiClient.get<HistorySession[]>(`/children/${id}/history`);
   return data;
 }
+
+export interface TutorInteraction {
+  id: number;
+  child_id: number | null;
+  question: string;
+  response: string;
+  created_at: string;
+}
+
+export async function fetchChildTutorHistory(id: number): Promise<TutorInteraction[]> {
+  const { data } = await apiClient.get<TutorInteraction[]>(`/children/${id}/tutor-history`);
+  return data;
+}

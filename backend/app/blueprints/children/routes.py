@@ -5,7 +5,7 @@ from marshmallow import ValidationError
 from app.blueprints.children import children_bp
 from app.extensions import db
 from app.errors import error_response
-from app.models import Child, PracticeSession, Progress
+from app.models import AIInteraction, Child, PracticeSession, Progress
 from app.schemas.child import ChildSchema, ChildUpdateSchema
 from app.services.analytics import log_event
 
@@ -156,3 +156,18 @@ def get_child_history(child_id: int):
         .all()
     )
     return [s.to_dict(include_questions=False) for s in sessions], 200
+
+
+@children_bp.get("/<int:child_id>/tutor-history")
+@jwt_required()
+def get_child_tutor_history(child_id: int):
+    child = _get_owned_child(child_id)
+    if not child:
+        return error_response("NOT_FOUND", "Child not found", 404)
+
+    interactions = (
+        AIInteraction.query.filter_by(child_id=child_id, interaction_type="tutor")
+        .order_by(AIInteraction.created_at.asc())
+        .all()
+    )
+    return [i.to_dict() for i in interactions], 200

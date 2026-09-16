@@ -87,6 +87,7 @@ Relationships: `children` (1-to-many → Child).
 | parent_id | Integer FK → User.id | |
 | question | Text | |
 | response | Text | |
+| interaction_type | String(30) default "tutor" | `"tutor"` (shown in per-child tutor history) vs `"generate_practice"` (logged but not shown as chat) |
 | created_at | DateTime | |
 
 ## AnalyticsEvent
