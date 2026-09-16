@@ -1,0 +1,24 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=${SECRET_KEY:-change-me}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-me}
+      - DATABASE_URL=sqlite:////data/kid_matrix.db
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - UPLOAD_DIR=/uploads
+      - CORS_ORIGINS=http://localhost:5173
+    volumes:
+      - ./data:/data
+      - ./uploads:/uploads
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend

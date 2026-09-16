@@ -1,0 +1,12 @@
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+Flask-CORS==4.0.1
+Flask-JWT-Extended==4.6.0
+marshmallow==3.21.3
+python-dotenv==1.0.1
+pytest==8.2.2
+openai>=1.55,<2
+Pillow==10.4.0
+faiss-cpu>=1.8
+numpy>=1.26
+gunicorn==22.0.0

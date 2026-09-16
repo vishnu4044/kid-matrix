@@ -1,0 +1,67 @@
+[
+  {
+    "id": "letters-formation",
+    "subject": "letters",
+    "text": "When children learn letter formation, focus on recognizability rather than a single 'correct' stroke order. Some children start letters from the bottom, some from the top — both are fine as long as the finished shape is legible."
+  },
+  {
+    "id": "letters-reversals",
+    "subject": "letters",
+    "text": "Letter reversals (writing 'b' as 'd', or 'E' backwards) are extremely common and developmentally normal for children under age 7. Gentle, repeated practice — not correction pressure — resolves most reversals over time."
+  },
+  {
+    "id": "letters-uppercase-first",
+    "subject": "letters",
+    "text": "Many kindergarten curricula teach uppercase letters before lowercase because uppercase forms use fewer curves and are easier for early motor control."
+  },
+  {
+    "id": "numbers-counting",
+    "subject": "numbers",
+    "text": "Number writing practice should be paired with counting practice (one-to-one correspondence) so children connect the written symbol to a quantity, not just a shape."
+  },
+  {
+    "id": "numbers-reversals",
+    "subject": "numbers",
+    "text": "Writing '3' or '7' backwards is common until age 6-7. Mirror writing of numbers is not a sign of a learning disability at this age on its own."
+  },
+  {
+    "id": "shapes-recognition",
+    "subject": "shapes",
+    "text": "Shape recognition practice benefits from real-world tie-ins: pointing out circles, squares, and triangles in everyday objects reinforces what a child draws on paper or a tablet."
+  },
+  {
+    "id": "shapes-fine-motor",
+    "subject": "shapes",
+    "text": "Drawing closed shapes like circles and squares requires more fine motor control than straight lines. Wobbly shapes with the right number of sides and rough proportions should still be counted as a successful attempt."
+  },
+  {
+    "id": "math-addition-strategies",
+    "subject": "math",
+    "text": "For early addition, counting-on strategies (starting from the larger number and counting up) are typically easier for young children than counting both addends from one."
+  },
+  {
+    "id": "math-subtraction-strategies",
+    "subject": "math",
+    "text": "Subtraction is usually harder than addition for young learners. Using physical objects or drawings to 'take away' helps build the concept before pure symbolic practice."
+  },
+  {
+    "id": "math-fact-fluency",
+    "subject": "math",
+    "text": "Short, frequent practice sessions (5-10 questions) build math fact fluency more effectively for young children than long sessions, since attention spans are limited."
+  },
+  {
+    "id": "general-encouragement",
+    "subject": "general",
+    "text": "Encouraging, non-judgmental feedback ('nice try, let's try that one again') keeps young learners motivated far more effectively than pointing out mistakes directly."
+  },
+  {
+    "id": "general-session-length",
+    "subject": "general",
+    "text": "For children aged 4-7, practice sessions of 5-10 minutes (roughly 10 questions) are more sustainable and effective than longer sessions that risk frustration or fatigue."
+  },
+  {
+    "id": "general-mixed-practice",
+    "subject": "general",
+    "text": "Mixing subjects in a single practice session (a few letters, a few numbers) can help maintain engagement for children who get bored practicing one skill repeatedly."
+  }
+]

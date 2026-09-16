@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Nunito", ui-rounded, system-ui, sans-serif;
+  --font-display: "Baloo 2", "Nunito", ui-rounded, system-ui, sans-serif;
+
+  --color-brand-blue: #5aa9ff;
+  --color-brand-blue-light: #eaf3ff;
+  --color-brand-green: #5fd6a8;
+  --color-brand-green-light: #e9fbf3;
+  --color-brand-yellow: #ffd166;
+  --color-brand-yellow-light: #fff8e6;
+  --color-brand-pink: #ff8fb1;
+  --color-brand-pink-light: #ffeef3;
+  --color-ink: #2c3550;
+  --color-ink-soft: #6b7290;
+
+  --radius-card: 1.5rem;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-[#f7f9fc] text-[color:var(--color-ink)] antialiased;
+    font-family: var(--font-sans);
+  }
+}
+
+@layer utilities {
+  .kid-tap-target {
+    min-height: 64px;
+    min-width: 64px;
+  }
+}
