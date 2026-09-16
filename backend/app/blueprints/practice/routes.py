@@ -164,7 +164,11 @@ def submit_answer(session_id: int):
             return error_response("VALIDATION_ERROR", "Invalid image data", 400)
 
         evaluation = handwriting_evaluation.evaluate(question.target, question.type, image_data_url)
-        recognized_answer = question.target if evaluation.get("result") == "correct" else None
+        # The child's actual recognized answer — never the question's target/expected
+        # answer. Previously this echoed `question.target` on a correct verdict, which
+        # meant a blank or wrong submission could still display the right answer as if
+        # it were what the child wrote (P0).
+        recognized_answer = evaluation.get("recognized_text")
         is_correct = evaluation.get("result") == "correct"
         confidence = evaluation.get("confidence")
         feedback = evaluation.get("feedback")
@@ -261,6 +265,7 @@ def get_practice_results(session_id: int):
                 "type": question.type,
                 "prompt": question.prompt,
                 "target": question.target,
+                "answer": answer.answer if answer else None,
                 "is_correct": answer.is_correct if answer else None,
                 "feedback": answer.feedback if answer else None,
             }

@@ -16,25 +16,12 @@ from app.services.child_context import build_child_context
 from app.services.openai_service import OpenAIService
 from app.services import curriculum_retrieval
 from app.services.analytics import log_event
+from app.services.practice_generator import build_question_from_ai
 
 generate_schema = GeneratePracticeRequestSchema()
 generated_practice_schema = GeneratedPracticeSchema()
 tutor_schema = TutorRequestSchema()
 recommendations_schema = RecommendationsRequestSchema()
-
-QUESTION_TYPE_ALIASES = {
-    "letter": "letter",
-    "letters": "letter",
-    "number": "number",
-    "numbers": "number",
-    "math": "math",
-    "addition": "math",
-    "subtraction": "math",
-    "multiplication": "math",
-    "division": "math",
-    "shape": "shape",
-    "shapes": "shape",
-}
 
 
 def _require_openai():
@@ -81,29 +68,29 @@ def generate_practice():
             "AI_INVALID_RESPONSE", "The AI response didn't match the expected format", 502, err.messages
         )
 
+    # P1: never trust the AI's prompt phrasing or arithmetic — build each question
+    # the same way built-in practice does (see build_question_from_ai), and drop
+    # anything that doesn't validate as a single-target write/draw prompt.
+    built_questions = [q for q in (build_question_from_ai(raw_q) for raw_q in generated["questions"]) if q]
+
+    if not built_questions:
+        return error_response(
+            "AI_INVALID_RESPONSE", "The AI didn't return any valid single-target questions", 502
+        )
+
     session = PracticeSession(
         child_id=child.id,
         type="ai",
         title=generated["title"],
         difficulty=generated.get("difficulty") or "beginner",
         status="pending",
-        total_questions=len(generated["questions"]),
+        total_questions=len(built_questions),
     )
     db.session.add(session)
     db.session.flush()
 
-    for index, q in enumerate(generated["questions"]):
-        normalized_type = QUESTION_TYPE_ALIASES.get(q["type"].lower(), "custom")
-        db.session.add(
-            Question(
-                session_id=session.id,
-                order_index=index,
-                type=normalized_type,
-                prompt=q["prompt"],
-                target=q["expected_answer"],
-                expected_answer=q["expected_answer"],
-            )
-        )
+    for index, q in enumerate(built_questions):
+        db.session.add(Question(session_id=session.id, order_index=index, **q))
 
     parent_id = int(get_jwt_identity())
     db.session.add(
@@ -143,8 +130,20 @@ def tutor():
 
     curriculum_hits = curriculum_retrieval.retrieve(data["question"], current_app.config.get("OPENAI_API_KEY", ""))
 
+    # P4: give the model real short-term memory of this same conversation
+    # (scoped to this child, or to general parent-only questions) so a
+    # follow-up doesn't re-derive a possibly-different number from scratch.
+    history_query = AIInteraction.query.filter_by(parent_id=parent_id, interaction_type="tutor")
+    history_query = history_query.filter_by(child_id=data.get("child_id"))
+    prior_turns = [
+        {"question": i.question, "response": i.response}
+        for i in history_query.order_by(AIInteraction.created_at.desc()).limit(6).all()
+    ][::-1]
+
     try:
-        response_text = OpenAIService().generate_tutor_response(data["question"], context, curriculum_hits)
+        response_text = OpenAIService().generate_tutor_response(
+            data["question"], context, curriculum_hits, prior_turns
+        )
     except Exception:  # noqa: BLE001
         current_app.logger.exception("OpenAI tutor call failed")
         return error_response("AI_UNAVAILABLE", "Couldn't reach the AI service, please try again", 503)

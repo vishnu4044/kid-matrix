@@ -34,6 +34,7 @@ export interface QuestionResult {
   type: string;
   prompt: string;
   target: string;
+  answer: string | null;
   is_correct: boolean | null;
   feedback: string | null;
 }

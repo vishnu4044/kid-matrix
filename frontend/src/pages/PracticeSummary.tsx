@@ -65,17 +65,23 @@ export function PracticeSummary() {
         <p className="mt-1 text-sm text-ink-soft">
           Every attempt is remembered here and factored into {child?.name ?? "their"} progress.
         </p>
-        <div className="mt-4 grid grid-cols-5 gap-2">
-          {results.map((r) => (
+        <div className="mt-4 space-y-2">
+          {results.map((r, i) => (
             <div
               key={r.question_id}
-              title={r.feedback ?? undefined}
-              className={`flex aspect-square flex-col items-center justify-center rounded-xl text-sm font-bold ${
-                r.is_correct ? "bg-brand-green text-white" : "bg-brand-pink text-white"
+              className={`flex items-center justify-between rounded-xl px-4 py-3 ${
+                r.is_correct ? "bg-brand-green-light" : "bg-brand-pink-light"
               }`}
             >
-              <span className="text-base">{r.target}</span>
-              <span>{r.is_correct ? "✓" : "✕"}</span>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">Q{i + 1} · Target: {r.target}</p>
+                <p className="text-sm text-ink">
+                  Child wrote: <span className="font-bold">{r.answer ?? "(nothing recognized)"}</span>
+                </p>
+              </div>
+              <span className={`text-xl font-bold ${r.is_correct ? "text-brand-green" : "text-brand-pink"}`}>
+                {r.is_correct ? "✓" : "✕"}
+              </span>
             </div>
           ))}
         </div>

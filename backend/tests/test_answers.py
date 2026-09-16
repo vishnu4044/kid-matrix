@@ -1,6 +1,8 @@
 import base64
 import io
+from unittest.mock import patch
 
+import pytest
 from PIL import Image, ImageDraw
 
 
@@ -49,6 +51,9 @@ def test_submit_blank_canvas_needs_practice(client, auth_headers):
     assert resp.status_code == 201
     body = resp.get_json()
     assert body["is_correct"] is False
+    # P0 regression: a blank submission must never show the target/expected
+    # answer as if it were what the child wrote.
+    assert body["answer"] is None
 
 
 def test_submit_inked_canvas_falls_back_to_lenient_heuristic(client, auth_headers):
@@ -64,7 +69,46 @@ def test_submit_inked_canvas_falls_back_to_lenient_heuristic(client, auth_header
         headers=auth_headers,
     )
     assert resp.status_code == 201
-    assert resp.get_json()["is_correct"] is True
+    body = resp.get_json()
+    assert body["is_correct"] is True
+    # P0 regression: the fallback never actually verified the drawing, so it must
+    # not fabricate a recognized answer (e.g. by echoing the target).
+    assert body["answer"] is None
+
+
+@pytest.fixture()
+def with_fake_api_key(app):
+    app.config["OPENAI_API_KEY"] = "sk-test-fake"
+    yield
+    app.config["OPENAI_API_KEY"] = ""
+
+
+def test_answer_reflects_real_recognized_text_not_target(client, auth_headers, with_fake_api_key):
+    """P0 regression: the displayed 'child's answer' must come from the vision
+    model's actual transcription, never from the question's target — for both
+    a correct and an incorrect verdict."""
+    child = create_child(client, auth_headers)
+    session = create_session(client, auth_headers, child["id"], config={"case": "upper", "group": "A-F"})
+    question = session["questions"][0]
+    wrong_letter = "Z" if question["target"] != "Z" else "Y"
+
+    fake_wrong = {
+        "recognized_text": wrong_letter,
+        "confidence": 0.8,
+        "result": "needs_practice",
+        "feedback": "Nice try!",
+        "needs_practice": True,
+    }
+    with patch("app.services.openai_service.OpenAIService.evaluate_handwriting", return_value=fake_wrong):
+        resp = client.post(
+            f"/api/practice/{session['id']}/answers",
+            json={"question_id": question["id"], "image_data_url": inked_canvas_data_url()},
+            headers=auth_headers,
+        )
+    body = resp.get_json()
+    assert body["is_correct"] is False
+    assert body["answer"] == wrong_letter
+    assert body["answer"] != question["target"]
 
 
 def test_submit_text_answer_for_math(client, auth_headers):
@@ -126,6 +170,9 @@ def test_results_show_per_question_correctness(client, auth_headers):
     assert results_by_id[questions[0]["id"]]["is_correct"] is True
     assert results_by_id[questions[1]["id"]]["is_correct"] is False
     assert results_by_id[questions[1]["id"]]["target"] == questions[1]["target"]
+    # P0 regression: the blank submission's recognized answer must be None, not
+    # the target echoed back.
+    assert results_by_id[questions[1]["id"]]["answer"] is None
 
 
 def test_answers_require_owned_session(client, auth_headers):

@@ -40,10 +40,16 @@ def _has_ink(image_data_url: str, threshold: float = 0.01) -> bool:
 
 
 def evaluate(target: str, question_type: str, image_data_url: str) -> dict:
+    """Returns {recognized_text, confidence, result, feedback, needs_practice}.
+
+    `recognized_text` is always what was actually seen (or None when nothing could
+    be determined) — never the target/expected answer. Callers must not fall back
+    to displaying the target as if it were the child's answer.
+    """
     has_ink = _has_ink(image_data_url)
     if not has_ink:
         return {
-            "recognized": False,
+            "recognized_text": None,
             "confidence": 0.0,
             "result": "needs_practice",
             "feedback": "Looks like nothing was drawn yet. Give it a try!",
@@ -61,9 +67,11 @@ def evaluate(target: str, question_type: str, image_data_url: str) -> dict:
             logger.exception("OpenAI handwriting evaluation failed; falling back to heuristic")
 
     # No key configured, or the AI call failed: fall back to a lenient heuristic
-    # so the child can still complete the session (see module docstring).
+    # so the child can still complete the session (see module docstring). We did
+    # NOT actually verify the drawing, so recognized_text stays None — it must
+    # never be set to the target just because we're being lenient about scoring.
     return {
-        "recognized": True,
+        "recognized_text": None,
         "confidence": 0.5,
         "result": "correct",
         "feedback": "Nice work!",

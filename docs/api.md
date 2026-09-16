@@ -88,35 +88,52 @@ Sets `status=in_progress`, `started_at=now`. 200 → session.
 ### `POST /api/practice/:id/answers`
 Body: `{ question_id, image_data_url? , answer? }` — one of the two required.
 `image_data_url` (a `data:image/png;base64,...` canvas export) goes through
-`HandwritingEvaluationService` (OpenAI vision, with a lenient heuristic fallback — see
-`docs/handwriting-recognition.md`). `answer` (plain text) is compared case-insensitively
-against the question's expected answer — used as a fallback path. Updates `Progress` for the
-relevant subject/topic on every submission. 201 → `{ id, is_correct, confidence, feedback }`.
+`HandwritingEvaluationService` (OpenAI vision using a strict JSON schema, with a lenient
+heuristic fallback — see `docs/handwriting-recognition.md`). `answer` (plain text) is compared
+case-insensitively against the question's expected answer — used as a fallback path. Updates
+`Progress` for the relevant subject/topic on every submission.
+201 → `{ id, answer, is_correct, confidence, feedback }` — `answer` is the vision model's own
+transcription of what was actually drawn (`null` for a blank canvas or the lenient fallback),
+**never** the question's target/expected answer echoed back.
 
 ### `POST /api/practice/:id/complete`
 Aggregates the latest answer per question, computes `score` (% correct), sets
 `status=completed`, `completed_at=now`. 200 → session + `correct_count`.
 
 ### `GET /api/practice/:id/results`
-200 → `{ session, results: [{ question_id, type, prompt, target, is_correct, feedback }] }` —
-per-question breakdown (which letters/answers were right vs. wrong), not just the aggregate
-score. Used by the Practice Summary screen so wrong answers are visibly remembered in history,
-not just folded into an accuracy percentage.
+200 → `{ session, results: [{ question_id, type, prompt, target, answer, is_correct, feedback }] }`
+— per-question breakdown (target vs. the child's actual recognized answer), not just the
+aggregate score. Used by the Practice Summary screen so wrong answers are visibly remembered in
+history, not just folded into an accuracy percentage.
 
-## AI (implemented — requires `OPENAI_API_KEY`; 503 `AI_UNAVAILABLE` otherwise)
+## AI (implemented — requires `OPENAI_API_KEY`; 503 `AI_UNAVAILABLE` otherwise; every call uses
+exactly one model, `gpt-4o-mini`, hardcoded in `app/services/openai_service.py`)
 
 ### `POST /api/ai/generate-practice`
 Body: `{ child_id, prompt }`. Builds a child context (age/grade/subject accuracy/weak
-topics/recent sessions — real SQLite data only) and asks OpenAI for structured JSON
-(`title, subject, grade, difficulty, questions: [{type, prompt, expected_answer}]`).
-The raw response is validated with `GeneratedPracticeSchema` before anything touches the
-DB — invalid AI output → 502 `AI_INVALID_RESPONSE`, never silently persisted. On success,
-persisted the same way as `POST /api/practice` (`type="ai"`). 201 → session.
+topics/recent sessions — real SQLite data only) and asks OpenAI for structured JSON via a
+strict schema: `{title, subject, difficulty, questions: [{type, target, math_expression}]}`.
+`type` is a closed enum (`letter|number|shape|math`) and `target`/`math_expression` are short
+values, never question text or answer options — the model cannot return multiple-choice,
+true/false, or fill-in-the-blank questions. The actual `prompt` shown to the child, and (for
+math) the answer itself, are always built server-side from these fields using the same
+templates as built-in practice (`app/services/practice_generator.py:build_question_from_ai`),
+never taken from the model directly. Any question that doesn't validate as a genuine
+single-target write/draw prompt is dropped rather than persisted; if nothing survives, 502
+`AI_INVALID_RESPONSE`. On success, persisted the same way as `POST /api/practice` (`type="ai"`).
+201 → session.
 
 ### `POST /api/ai/tutor`
 Body: `{ child_id?, question }`. Builds the same child context (if `child_id` given) plus up
 to 3 relevant snippets from the FAISS-backed curriculum corpus (`app/services/
-curriculum_retrieval.py`) when the question seems to call for general teaching guidance.
+curriculum_retrieval.py`) when the question seems to call for general teaching guidance. The
+context deliberately separates `overall_subject_accuracy` (all-time aggregate) from
+`sessions_today` and `recent_sessions` (individual session scores) so the model always has one
+unambiguous field to answer "today" vs. "overall" vs. "recent history" questions, instead of
+several different real numbers sharing a subject name. The last 3 exchanges of this same
+conversation (scoped to this child, or to general parent-only questions) are sent as real
+conversation history, so a follow-up stays consistent with what was already said rather than
+re-deriving a possibly-different figure from scratch each turn.
 200 → `{ response }`. Logged to `AIInteraction` (`interaction_type="tutor"`) and retrievable
 per child via `GET /api/children/:id/tutor-history` — each child has their own saved
 conversation, not a shared/global chat.

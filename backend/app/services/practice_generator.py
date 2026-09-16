@@ -3,6 +3,7 @@
 Each generator returns a list of dicts shaped like the `Question` model's
 constructor kwargs (minus `session_id`/`order_index`, added by the caller).
 """
+import re
 import random
 import string
 
@@ -156,3 +157,90 @@ def generate_mixed(subjects: list[str], count: int, difficulty: str = "beginner"
 
     random.shuffle(questions)
     return questions[:count]
+
+
+_MATH_EXPRESSION_RE = re.compile(r"^\s*(\d{1,3})\s*([+\-×xX*÷/])\s*(\d{1,3})\s*$")
+_MATH_SYMBOL_CANONICAL = {"+": "+", "-": "-", "×": "×", "x": "×", "X": "×", "*": "×", "÷": "÷", "/": "÷"}
+
+
+def build_question_from_ai(raw: dict) -> dict | None:
+    """Turns one AI-proposed {type, target, math_expression} into the same shape
+    the deterministic generators above produce — same prompt phrasing, same
+    target/expected_answer semantics — or returns None if it doesn't validate.
+
+    This is the enforcement point for P1: the AI is never trusted to phrase the
+    prompt or state the answer itself. We validate `target` against a strict
+    per-type pattern and, for math, parse the bare expression and compute the
+    answer ourselves (never trusting the model's arithmetic), then build the
+    prompt with the exact same template `generate_math` uses. Anything that
+    doesn't fit — multi-word text, option lists, non-numeric noise — fails
+    validation here and is dropped rather than persisted.
+    """
+    qtype = raw.get("type")
+    target = (raw.get("target") or "").strip()
+
+    if qtype == "letter":
+        match = re.fullmatch(r"[A-Za-z]", target)
+        if not match:
+            return None
+        return {
+            "type": "letter",
+            "prompt": f"Write the letter {target}",
+            "target": target,
+            "expected_answer": target,
+            "metadata_json": {"case": "upper" if target.isupper() else "lower", "source": "ai"},
+        }
+
+    if qtype == "number":
+        if not re.fullmatch(r"\d{1,3}", target):
+            return None
+        return {
+            "type": "number",
+            "prompt": f"Write the number {target}",
+            "target": target,
+            "expected_answer": target,
+            "metadata_json": {"source": "ai"},
+        }
+
+    if qtype == "shape":
+        shape = target.lower()
+        if shape not in SHAPE_OPTIONS:
+            return None
+        return {
+            "type": "shape",
+            "prompt": f"Draw a {shape}",
+            "target": shape,
+            "expected_answer": shape,
+            "metadata_json": {"source": "ai"},
+        }
+
+    if qtype == "math":
+        expression = (raw.get("math_expression") or "").strip()
+        match = _MATH_EXPRESSION_RE.match(expression)
+        if not match:
+            return None
+        a, symbol_raw, b = int(match.group(1)), match.group(2), int(match.group(3))
+        symbol = _MATH_SYMBOL_CANONICAL[symbol_raw]
+
+        if symbol == "+":
+            answer = a + b
+        elif symbol == "-":
+            if a < b:
+                a, b = b, a
+            answer = a - b
+        elif symbol == "×":
+            answer = a * b
+        else:  # ÷ — only accept expressions that divide evenly
+            if b == 0 or a % b != 0:
+                return None
+            answer = a // b
+
+        return {
+            "type": "math",
+            "prompt": f"{a} {symbol} {b} = ?",
+            "target": str(answer),
+            "expected_answer": str(answer),
+            "metadata_json": {"symbol": symbol, "a": a, "b": b, "source": "ai"},
+        }
+
+    return None

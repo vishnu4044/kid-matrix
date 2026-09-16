@@ -19,6 +19,9 @@ logger = logging.getLogger(__name__)
 
 _BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 CURRICULUM_PATH = os.path.join(_BASE_DIR, "ai", "curriculum.json")
+# Not the app's chat/vision model (that's hardcoded to gpt-4o-mini in
+# openai_service.py). Embeddings are a distinct capability gpt-4o-mini doesn't
+# provide, so FAISS retrieval necessarily depends on this separate model.
 EMBEDDING_MODEL = "text-embedding-3-small"
 
 _cache: dict = {"index": None, "corpus": None}

@@ -21,7 +21,14 @@ def inked_canvas_data_url() -> str:
     return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
 
 
-def run_full_session(client, headers, child_id):
+def blank_canvas_data_url() -> str:
+    image = Image.new("RGB", (100, 100), "white")
+    buf = io.BytesIO()
+    image.save(buf, format="PNG")
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+
+
+def run_full_session(client, headers, child_id, image_fn=inked_canvas_data_url):
     session = client.post(
         "/api/practice",
         json={"child_id": child_id, "type": "letters", "count": 5, "config": {"case": "upper", "group": "A-F"}},
@@ -31,7 +38,7 @@ def run_full_session(client, headers, child_id):
     for q in session["questions"]:
         client.post(
             f"/api/practice/{session['id']}/answers",
-            json={"question_id": q["id"], "image_data_url": inked_canvas_data_url()},
+            json={"question_id": q["id"], "image_data_url": image_fn()},
             headers=headers,
         )
     return client.post(f"/api/practice/{session['id']}/complete", headers=headers).get_json()
@@ -56,6 +63,23 @@ def test_progress_after_session(client, auth_headers):
     assert body["questions_completed"] == 5
     assert "letters" in body["subject_progress"]
     assert len(body["topics"]["letters"]) == 5
+
+
+def test_subject_progress_updates_after_second_session(client, auth_headers):
+    """P2 regression: the Letters subject percentage must move with new
+    attempts, not stay frozen at whatever the first session produced."""
+    child = create_child(client, auth_headers)
+    run_full_session(client, auth_headers, child["id"], image_fn=inked_canvas_data_url)
+
+    first = client.get(f"/api/children/{child['id']}/progress", headers=auth_headers).get_json()
+    assert first["subject_progress"]["letters"] == 100.0
+
+    run_full_session(client, auth_headers, child["id"], image_fn=blank_canvas_data_url)
+
+    second = client.get(f"/api/children/{child['id']}/progress", headers=auth_headers).get_json()
+    assert second["questions_completed"] == 10
+    assert second["subject_progress"]["letters"] != first["subject_progress"]["letters"]
+    assert second["subject_progress"]["letters"] < first["subject_progress"]["letters"]
 
 
 def test_history_lists_completed_sessions(client, auth_headers):
