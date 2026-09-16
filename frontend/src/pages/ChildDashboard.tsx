@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card } from "../components/Card";
 import { Button } from "../components/Button";
 import { fetchChild, fetchChildProgress } from "../api/children";
+import { Spinner } from "../components/Spinner";
 
 const SUBJECTS = [
   { key: "letters", label: "Letters", color: "bg-brand-blue" },
@@ -27,7 +28,7 @@ export function ChildDashboard() {
     enabled: Boolean(childId),
   });
 
-  if (isLoading) return <p className="text-ink-soft">Loading...</p>;
+  if (isLoading) return <Spinner label="Loading child..." />;
   if (isError || !child) return <p className="text-red-500">Couldn't load this child.</p>;
 
   const hasHistory = Boolean(progress && progress.sessions_completed > 0);

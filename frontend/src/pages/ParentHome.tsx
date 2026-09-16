@@ -5,6 +5,7 @@ import { Card } from "../components/Card";
 import { Button } from "../components/Button";
 import { Modal } from "../components/Modal";
 import { ChildCard } from "../features/children/ChildCard";
+import { ChildCardSkeleton } from "../features/children/ChildCardSkeleton";
 import { AddChildForm } from "../features/children/AddChildForm";
 import { fetchChildren } from "../api/children";
 import { useAuth } from "../features/auth/AuthContext";
@@ -36,8 +37,9 @@ export function ParentHome() {
       </div>
       <p className="mt-1 text-ink-soft">Here are your children</p>
 
-      <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-        {isLoading && <Card className="col-span-full p-6 text-ink-soft">Loading children...</Card>}
+      <div className={`mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 ${!isLoading ? "animate-fade-in" : ""}`}>
+        {isLoading &&
+          Array.from({ length: 4 }).map((_, i) => <ChildCardSkeleton key={i} />)}
         {isError && (
           <Card className="col-span-full p-6 text-red-500">
             Couldn't load children. Check that the backend is running.

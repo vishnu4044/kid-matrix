@@ -5,6 +5,7 @@ import { Card } from "../components/Card";
 import { ChildSwitcherBar } from "../features/children/ChildSwitcherBar";
 import { useSelectedChild } from "../hooks/useSelectedChild";
 import { fetchChildHistory } from "../api/children";
+import { Spinner } from "../components/Spinner";
 
 const FILTERS = [
   { key: "all", label: "All" },
@@ -49,7 +50,7 @@ export function PracticeHistory() {
       </div>
 
       <div className="mt-4 space-y-3">
-        {isLoading && <p className="text-ink-soft">Loading...</p>}
+        {isLoading && <Spinner label="Loading history..." />}
         {!isLoading && filtered.length === 0 && (
           <Card className="p-8 text-center text-ink-soft">
             No completed practice sessions yet{selectedChild ? ` for ${selectedChild.name}` : ""}.

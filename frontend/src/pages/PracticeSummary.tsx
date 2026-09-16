@@ -4,6 +4,7 @@ import { Card } from "../components/Card";
 import { Button } from "../components/Button";
 import { fetchPracticeResults } from "../api/practice";
 import { fetchChild } from "../api/children";
+import { Spinner } from "../components/Spinner";
 
 export function PracticeSummary() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -23,7 +24,7 @@ export function PracticeSummary() {
     enabled: Boolean(session),
   });
 
-  if (isLoading || !session) return <p className="text-ink-soft">Loading...</p>;
+  if (isLoading || !session) return <Spinner label="Loading results..." />;
 
   const correct = session.correct_count ?? results.filter((r) => r.is_correct).length;
   const accuracy = session.score ?? 0;

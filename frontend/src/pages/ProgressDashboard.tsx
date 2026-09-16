@@ -4,6 +4,7 @@ import { Card } from "../components/Card";
 import { ChildSwitcherBar } from "../features/children/ChildSwitcherBar";
 import { useSelectedChild } from "../hooks/useSelectedChild";
 import { fetchChildHistory, fetchChildProgress } from "../api/children";
+import { Spinner } from "../components/Spinner";
 
 const SUBJECT_LABELS: Record<string, { label: string; color: string }> = {
   letters: { label: "Letters", color: "bg-brand-blue" },
@@ -65,7 +66,7 @@ export function ProgressDashboard() {
       </div>
 
       {!selectedChild || !progress ? (
-        <p className="mt-6 text-ink-soft">Loading...</p>
+        <Spinner label="Loading progress..." />
       ) : (
         <>
           <Card className="mt-6 p-6 text-center">

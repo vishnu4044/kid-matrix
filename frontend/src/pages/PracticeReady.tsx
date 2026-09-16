@@ -4,6 +4,7 @@ import { Card } from "../components/Card";
 import { Button } from "../components/Button";
 import { fetchPractice, startPractice } from "../api/practice";
 import { fetchChild } from "../api/children";
+import { Spinner } from "../components/Spinner";
 
 export function PracticeReady() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -26,7 +27,7 @@ export function PracticeReady() {
     onSuccess: () => navigate(`/kid/${session?.child_id}/practice/${sessionId}`),
   });
 
-  if (isLoading || !session) return <p className="text-ink-soft">Loading...</p>;
+  if (isLoading || !session) return <Spinner label="Getting practice ready..." />;
 
   const estimatedMinutes = Math.max(1, Math.round((session.total_questions * 30) / 60));
 

@@ -3,17 +3,19 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
+import { Spinner } from "../../components/Spinner";
 import { HandwritingCanvas, type HandwritingCanvasHandle } from "../../features/handwriting/HandwritingCanvas";
 import { StarBurst } from "../../features/practice/StarBurst";
 import { QuestionProgressDots } from "../../features/practice/QuestionProgressDots";
 import { fetchPractice, submitAnswer, completePractice } from "../../api/practice";
 import { fetchChild } from "../../api/children";
 import { useSpeak } from "../../hooks/useSpeak";
-import type { AnswerResult, Question } from "../../types/practice";
+import type { Question } from "../../types/practice";
 
-type Phase = "writing" | "feedback" | "complete";
+type Phase = "writing" | "complete";
 
-const AUTO_ADVANCE_MS = 2200;
+// How long the tick/cross overlay stays on screen before auto-advancing.
+const OVERLAY_MS = 1100;
 
 function answerPhrase(question: Question): string {
   switch (question.type) {
@@ -35,11 +37,10 @@ export function KidPracticeSession() {
   const navigate = useNavigate();
   const speak = useSpeak();
   const canvasRef = useRef<HandwritingCanvasHandle>(null);
-  const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("writing");
-  const [lastResult, setLastResult] = useState<AnswerResult | null>(null);
+  const [overlay, setOverlay] = useState<{ correct: boolean; feedback: string } | null>(null);
   const [results, setResults] = useState<(boolean | null)[]>([]);
   const [summary, setSummary] = useState<{ correct_count: number; total_questions: number; score: number | null } | null>(
     null,
@@ -71,7 +72,6 @@ export function KidPracticeSession() {
       completeMutation.mutate();
     } else {
       setIndex((i) => i + 1);
-      setPhase("writing");
     }
   };
 
@@ -82,13 +82,16 @@ export function KidPracticeSession() {
         image_data_url: canvasRef.current?.toDataURL(),
       }),
     onSuccess: (result) => {
-      setLastResult(result);
+      const correct = Boolean(result.is_correct);
       setResults((prev) => {
         const next = [...prev];
-        next[index] = Boolean(result.is_correct);
+        next[index] = correct;
         return next;
       });
-      setPhase("feedback");
+      setOverlay({
+        correct,
+        feedback: result.feedback || (correct ? "That's correct!" : "Let's keep practicing."),
+      });
       speak(answerPhrase(question!));
     },
   });
@@ -105,23 +108,19 @@ export function KidPracticeSession() {
     },
   });
 
-  // Auto-advance after feedback, so a wrong answer is simply recorded and the
-  // session moves on rather than looping the child on the same letter.
+  // Show the tick/cross for a moment, then automatically move on — a wrong
+  // answer is simply recorded, not something the child has to redo.
   useEffect(() => {
-    if (phase !== "feedback") return;
-    autoAdvanceTimer.current = setTimeout(goToNext, AUTO_ADVANCE_MS);
-    return () => {
-      if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
-    };
+    if (!overlay) return;
+    const timer = setTimeout(() => {
+      setOverlay(null);
+      goToNext();
+    }, OVERLAY_MS);
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase]);
+  }, [overlay]);
 
-  if (!session || !child || !question) return <p className="text-center text-ink-soft">Loading...</p>;
-
-  const handleNextNow = () => {
-    if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
-    goToNext();
-  };
+  if (!session || !child || !question) return <Spinner label="Loading practice..." />;
 
   if (phase === "complete" && summary) {
     const accuracy = summary.total_questions
@@ -159,28 +158,7 @@ export function KidPracticeSession() {
     );
   }
 
-  if (phase === "feedback" && lastResult) {
-    const correct = Boolean(lastResult.is_correct);
-    return (
-      <div className="flex min-h-[70vh] items-center justify-center">
-        <Card className="relative max-w-md overflow-visible p-10 text-center">
-          {correct && <StarBurst />}
-          <div className={`text-6xl ${correct ? "animate-bounce-in" : "animate-wobble"}`}>
-            {correct ? "⭐" : "💪"}
-          </div>
-          <h1 className="mt-4 font-display text-2xl font-bold text-ink">
-            {correct ? "Great Job!" : "Nice Try!"}
-          </h1>
-          <p className="mt-2 text-ink-soft">
-            {lastResult.feedback || (correct ? "That's correct!" : "Let's keep practicing.")}
-          </p>
-          <Button className="mt-6" fullWidth onClick={handleNextNow} disabled={completeMutation.isPending}>
-            {isLastQuestion ? "Finish" : "Next →"}
-          </Button>
-        </Card>
-      </div>
-    );
-  }
+  const busy = answerMutation.isPending || Boolean(overlay) || completeMutation.isPending;
 
   return (
     <div key={question.id} className="animate-pop-in">
@@ -203,7 +181,7 @@ export function KidPracticeSession() {
 
       <h1 className="mt-4 text-center font-display text-2xl font-bold text-ink">{question.prompt}</h1>
 
-      <div className="mt-6">
+      <div className="relative mt-6">
         <HandwritingCanvas
           ref={canvasRef}
           guideText={question.type === "letter" || question.type === "number" ? question.target : undefined}
@@ -213,13 +191,31 @@ export function KidPracticeSession() {
               : undefined
           }
         />
+
+        {overlay && (
+          <div className="absolute inset-0 flex items-center justify-center rounded-3xl bg-white/85 backdrop-blur-[2px]">
+            {overlay.correct && <StarBurst />}
+            <div className="flex flex-col items-center gap-2">
+              <div
+                className={`flex h-24 w-24 items-center justify-center rounded-full text-5xl font-black text-white shadow-lg ${
+                  overlay.correct ? "animate-bounce-in bg-brand-green" : "animate-wobble bg-brand-pink"
+                }`}
+              >
+                {overlay.correct ? "✓" : "✕"}
+              </div>
+              <p className="animate-pop-in text-center font-display text-lg font-bold text-ink">
+                {overlay.feedback}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="mt-6 flex gap-3">
-        <Button variant="secondary" fullWidth onClick={() => canvasRef.current?.clear()}>
+        <Button variant="secondary" fullWidth onClick={() => canvasRef.current?.clear()} disabled={busy}>
           Clear
         </Button>
-        <Button fullWidth onClick={() => answerMutation.mutate()} disabled={answerMutation.isPending}>
+        <Button fullWidth onClick={() => answerMutation.mutate()} disabled={busy}>
           {answerMutation.isPending ? "Checking..." : "Next"}
         </Button>
       </div>
