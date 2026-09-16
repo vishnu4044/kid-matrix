@@ -11,6 +11,7 @@ from app.models import Answer, Child, PracticeSession, Question
 from app.schemas.practice import AnswerSubmitSchema, PracticeCreateSchema
 from app.services import handwriting_evaluation, practice_generator as gen, progress as progress_service
 from app.services.storage import save_handwriting_image
+from app.services.analytics import log_event
 
 create_schema = PracticeCreateSchema()
 answer_schema = AnswerSubmitSchema()
@@ -115,6 +116,7 @@ def start_practice(session_id: int):
 
     session.status = "in_progress"
     session.started_at = datetime.now(timezone.utc)
+    log_event("practice_started", parent_id=parent_id, child_id=session.child_id, metadata={"type": session.type})
     db.session.commit()
     return session.to_dict(), 200
 
@@ -173,6 +175,13 @@ def submit_answer(session_id: int):
 
     progress_service.record_answer(session.child_id, question, is_correct)
 
+    log_event(
+        "question_answered",
+        parent_id=parent_id,
+        child_id=session.child_id,
+        metadata={"question_id": question.id, "is_correct": is_correct},
+    )
+
     db.session.commit()
     return answer.to_dict(), 201
 
@@ -203,6 +212,22 @@ def complete_practice(session_id: int):
     session.status = "completed"
     session.completed_at = datetime.now(timezone.utc)
     session.score = score
+
+    duration_seconds = None
+    if session.started_at:
+        # SQLite drops tzinfo on round-trip, so a freshly-set aware `completed_at` can meet a
+        # naive `started_at` loaded from the DB earlier in this request. Normalize both to naive.
+        started_naive = session.started_at.replace(tzinfo=None)
+        completed_naive = session.completed_at.replace(tzinfo=None)
+        duration_seconds = round((completed_naive - started_naive).total_seconds())
+
+    log_event(
+        "practice_completed",
+        parent_id=parent_id,
+        child_id=session.child_id,
+        metadata={"score": score, "correct_count": correct_count, "total": total, "duration_seconds": duration_seconds},
+    )
+
     db.session.commit()
 
     result = session.to_dict()

@@ -16,3 +16,16 @@ class RegisterSchema(Schema):
 class LoginSchema(Schema):
     email = fields.Email(required=True)
     password = fields.String(required=True)
+
+
+class SetPinSchema(Schema):
+    pin = fields.String(required=True, validate=validate.Regexp(r"^\d{4}$", error="PIN must be exactly 4 digits"))
+
+
+class VerifyPinSchema(Schema):
+    pin = fields.String(required=True)
+
+
+class UpdateSettingsSchema(Schema):
+    name = fields.String(required=False, validate=validate.Length(min=1, max=120))
+    audio_enabled = fields.Boolean(required=False)

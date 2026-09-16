@@ -15,6 +15,7 @@ from app.schemas.ai import (
 from app.services.child_context import build_child_context
 from app.services.openai_service import OpenAIService
 from app.services import curriculum_retrieval
+from app.services.analytics import log_event
 
 generate_schema = GeneratePracticeRequestSchema()
 generated_practice_schema = GeneratedPracticeSchema()
@@ -104,14 +105,16 @@ def generate_practice():
             )
         )
 
+    parent_id = int(get_jwt_identity())
     db.session.add(
         AIInteraction(
             child_id=child.id,
-            parent_id=int(get_jwt_identity()),
+            parent_id=parent_id,
             question=data["prompt"],
             response=generated["title"],
         )
     )
+    log_event("ai_practice_generated", parent_id=parent_id, child_id=child.id)
 
     db.session.commit()
     return session.to_dict(), 201
@@ -153,6 +156,7 @@ def tutor():
             response=response_text,
         )
     )
+    log_event("ai_tutor_used", parent_id=parent_id, child_id=data.get("child_id"))
     db.session.commit()
 
     return {"response": response_text}, 200

@@ -4,7 +4,6 @@ import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { ParentHome } from "./pages/ParentHome";
 import { ChildDashboard } from "./pages/ChildDashboard";
-import { ComingSoon } from "./pages/ComingSoon";
 import { ParentLayout } from "./layouts/ParentLayout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { PracticeTypeSelect } from "./pages/PracticeTypeSelect";
@@ -21,6 +20,7 @@ import { ProgressDashboard } from "./pages/ProgressDashboard";
 import { PracticeHistory } from "./pages/PracticeHistory";
 import { AIPracticeGenerator } from "./pages/practice-setup/AIPracticeGenerator";
 import { AITutor } from "./pages/AITutor";
+import { Settings } from "./pages/Settings";
 
 export default function App() {
   return (
@@ -50,7 +50,7 @@ export default function App() {
         <Route path="/progress" element={<ProgressDashboard />} />
         <Route path="/sessions" element={<PracticeHistory />} />
         <Route path="/ai-tutor" element={<AITutor />} />
-        <Route path="/settings" element={<ComingSoon title="Settings" phase="a later phase" />} />
+        <Route path="/settings" element={<Settings />} />
       </Route>
 
       <Route

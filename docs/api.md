@@ -21,6 +21,22 @@ Body: `{ "email": str, "password": str }`
 Requires auth. Client discards the token; endpoint returns 200 for symmetry (JWTs here are
 stateless, no server-side blocklist).
 
+### `GET /api/auth/me`
+200 → `{ id, name, email, has_pin, audio_enabled }` for the current user.
+
+### `PUT /api/auth/settings`
+Body: partial `{ name?, audio_enabled? }`. 200 → updated user.
+
+### `PUT /api/auth/pin`
+Body: `{ pin: "1234" }` (must be exactly 4 digits). Hashes and stores it; used to gate exiting
+Kid Mode back to the parent dashboard. 200 → updated user (`has_pin: true`).
+
+### `DELETE /api/auth/pin`
+Removes the PIN. 200 → updated user (`has_pin: false`).
+
+### `POST /api/auth/verify-pin`
+Body: `{ pin }`. 200 → `{ valid: bool }` — never reveals the actual PIN, just a match result.
+
 ## Children (implemented)
 
 ### `GET /api/children`

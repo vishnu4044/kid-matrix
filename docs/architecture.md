@@ -47,12 +47,14 @@ The React app never sees it — it only calls Flask endpoints under `/api/ai/*`.
 | 8 | Advanced handwriting recognition | See `docs/handwriting-recognition.md` — the pluggable interface exists (OpenAI vision is the current real implementation); a custom-trained model is a documented future upgrade, not built in this pass |
 
 Each phase ended with the app runnable end-to-end, verified via backend pytest and a live
-browser walkthrough (including real OpenAI calls) at each step. Not built this pass: Parent
-PIN gate on Kid Mode exit (Settings page is still a stub — see below), audio setting toggle,
-offline caching, Docker images, and a dedicated e2e test runner (Playwright/Cypress) — the
-core loop was verified manually via Chrome automation instead. Settings, analytics event
-tracking, and a self-serve "Kid Home" practice picker (children currently only enter a
-practice a parent already created) are the main remaining gaps versus the full spec.
+browser walkthrough (including real OpenAI calls) at each step. A follow-up pass added a
+Parent PIN gate on Kid Mode exit, a real Settings page (account name, audio toggle, PIN
+management, manage/remove children), and basic analytics event logging
+(`practice_started`/`practice_completed`/`question_answered`/`child_added`/
+`ai_practice_generated`/`ai_tutor_used`, no dedicated UI). Not built: offline caching, a
+dedicated e2e test runner (Playwright/Cypress — the core loop was verified manually via
+Chrome automation instead), and a self-serve "Kid Home" practice picker (children currently
+only enter a practice a parent already created).
 
 ## Parent vs. Kid Mode
 

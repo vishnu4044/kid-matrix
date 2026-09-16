@@ -2,6 +2,8 @@ export interface User {
   id: number;
   name: string;
   email: string;
+  has_pin: boolean;
+  audio_enabled: boolean;
 }
 
 export interface Child {

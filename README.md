@@ -75,6 +75,7 @@ npm run dev                     # http://localhost:5173
 
 ```bash
 npm run build                   # type-checks (tsc -b) then builds to dist/
+npm run test                    # vitest — ProtectedRoute, HandwritingCanvas, Login (7 tests)
 ```
 
 ## Docker
@@ -99,9 +100,11 @@ Flask, which then calls OpenAI server-side. If `OPENAI_API_KEY` is unset:
 
 ## What's implemented vs. not
 
-All 8 phases from the original spec have a working implementation (see
-`docs/architecture.md` for the detailed table). The main known gaps: no Parent PIN gate on
-exiting Kid Mode yet (Settings page is still a placeholder), no audio-toggle/offline-caching/
-analytics-event-tracking, and no dedicated Playwright/Cypress e2e suite — the core loop was
-verified manually via Chrome browser automation against the real backend and a real OpenAI
-key during development, not just unit tests.
+All 8 phases from the original spec have a working implementation, plus a Parent PIN gate on
+exiting Kid Mode, a real Settings page (name, audio toggle, PIN management, manage children),
+and basic analytics event logging (see `docs/architecture.md` for the detailed table). Backend
+has 34 pytest tests; frontend has a small Vitest suite (`ProtectedRoute`, `HandwritingCanvas`,
+`Login`). Main known gaps: no offline caching, no dedicated Playwright/Cypress e2e suite, and
+no self-serve "Kid Home" practice picker (children only enter a practice a parent already
+created) — the core loop was verified manually via Chrome browser automation against the real
+backend and a real OpenAI key during development, not just automated tests.

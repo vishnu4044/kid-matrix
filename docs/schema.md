@@ -10,6 +10,8 @@ string (no SQLite-specific types used).
 | name | String(120) | parent's display name |
 | email | String(255) unique, indexed | login identifier |
 | password_hash | String(255) | pbkdf2 hash, never plaintext |
+| pin_hash | String(255) nullable | hashed 4-digit Parent PIN; gates exiting Kid Mode (section 43) |
+| audio_enabled | Boolean default true | spoken-instruction preference (section 45) |
 | created_at | DateTime | server default now |
 | updated_at | DateTime | onupdate now |
 
@@ -87,5 +89,19 @@ Relationships: `children` (1-to-many → Child).
 | response | Text | |
 | created_at | DateTime | |
 
-All tables are created in Phase 1 via `db.create_all()` (Flask-Migrate can be introduced later)
-so no destructive migration is needed when Phase 2+ starts writing to them.
+## AnalyticsEvent
+| field | type | notes |
+|---|---|---|
+| id | Integer PK | |
+| event_type | String(50), indexed | e.g. `practice_started`, `practice_completed`, `question_answered`, `child_added`, `ai_practice_generated`, `ai_tutor_used` |
+| parent_id | Integer FK → User.id, nullable | |
+| child_id | Integer FK → Child.id, nullable | |
+| event_metadata | JSON nullable | event-specific details (score, question_id, etc.) |
+| created_at | DateTime, indexed | |
+
+No PII beyond ids is stored here (spec section 48); there is no dedicated parent-facing
+analytics UI yet.
+
+All tables are created via `db.create_all()` (Flask-Migrate can be introduced later) — since
+there's no migration tooling yet, a schema change (like the PIN/audio columns above) requires
+deleting and reseeding the dev SQLite file (`rm data/kid_matrix.db && python seed.py`).

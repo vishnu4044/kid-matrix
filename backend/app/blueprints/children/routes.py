@@ -7,6 +7,7 @@ from app.extensions import db
 from app.errors import error_response
 from app.models import Child, PracticeSession, Progress
 from app.schemas.child import ChildSchema, ChildUpdateSchema
+from app.services.analytics import log_event
 
 child_schema = ChildSchema()
 child_update_schema = ChildUpdateSchema()
@@ -36,6 +37,8 @@ def create_child():
     parent_id = int(get_jwt_identity())
     child = Child(parent_id=parent_id, **data)
     db.session.add(child)
+    db.session.flush()
+    log_event("child_added", parent_id=parent_id, child_id=child.id)
     db.session.commit()
     return child.to_dict(), 201
 
