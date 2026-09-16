@@ -15,7 +15,8 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-    OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+    # Model is intentionally hardcoded in app/services/openai_service.py (gpt-4o-mini),
+    # not env-configurable — there's exactly one model in play across the app.
 
     FAISS_INDEX_PATH = os.environ.get("FAISS_INDEX_PATH", os.path.join(BASE_DIR, "..", "data", "faiss"))
     UPLOAD_DIR = os.environ.get("UPLOAD_DIR", os.path.join(BASE_DIR, "..", "uploads"))
