@@ -44,12 +44,18 @@ pip install -r requirements.txt
 cp ../.env.example .env         # then fill in OPENAI_API_KEY (optional but recommended)
 
 python seed.py                  # creates demo parent + Emma/Noah with sample progress
-python wsgi.py                  # runs on http://127.0.0.1:5000
+python wsgi.py                  # runs on http://0.0.0.0:5050 (reachable at 127.0.0.1:5050
+                                 # and, on the same WiFi, http://<your-LAN-IP>:5050)
 ```
 
-**Use `127.0.0.1:5000`, not `localhost:5000`** — on macOS, `localhost:5000` can be captured by
-the AirPlay Receiver, which will silently 403 all requests. The frontend's default
-`VITE_API_BASE_URL` already points at `127.0.0.1`.
+**Port 5050, not 5000** — on macOS, AirPlay Receiver squats on `*:5000` (all interfaces, not
+just localhost) and silently blocks or 403s anything trying to bind or connect there. The
+frontend's default `VITE_API_BASE_URL` already points at `127.0.0.1:5050`.
+
+To test from an iPad/phone on the same WiFi: find this machine's LAN IP
+(`ipconfig getifaddr en0` on macOS), set `frontend/.env`'s `VITE_API_BASE_URL` to
+`http://<that-IP>:5050/api`, add `http://<that-IP>:5173` to `backend/.env`'s `CORS_ORIGINS`,
+and open `http://<that-IP>:5173` in the tablet's browser.
 
 Demo login after seeding: `john@example.com` / `password123` (children: Emma, Noah).
 
@@ -60,16 +66,17 @@ cd backend
 PYTHONPATH=. pytest -q
 ```
 
-29 tests cover auth, child ownership/authorization, practice generation, answer submission +
-evaluation (including a real handwriting heuristic fallback path), progress aggregation, and
-AI endpoints (mocked, so they run without an API key or network access).
+45 tests cover auth, child ownership/authorization, practice generation, answer submission +
+evaluation (including a real handwriting heuristic fallback path and mocked vision-model
+responses), progress aggregation, and AI endpoints (mocked, so they run without an API key or
+network access).
 
 ## Frontend setup
 
 ```bash
 cd frontend
 npm install
-cp .env.example .env            # defaults already point at http://127.0.0.1:5000/api
+cp .env.example .env            # defaults already point at http://127.0.0.1:5050/api
 npm run dev                     # http://localhost:5173
 ```
 

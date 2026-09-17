@@ -1,7 +1,7 @@
 # Kid Matrix — API Specification
 
-Base URL (dev): `http://127.0.0.1:5000/api` (use `127.0.0.1`, not `localhost` — on macOS
-`localhost:5000` can collide with the AirPlay Receiver).
+Base URL (dev): `http://127.0.0.1:5050/api` (port 5050, not 5000 — on macOS, AirPlay Receiver
+squats on `*:5000` across all interfaces and blocks it entirely).
 
 All authenticated endpoints require `Authorization: Bearer <jwt>`.
 
