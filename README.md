@@ -120,13 +120,6 @@ set explicitly — auto-detection from the bare repo root will fail (no single
 3. Once both are deployed, double-check `CORS_ORIGINS` on the backend actually matches the
    frontend's final public URL exactly (scheme + host, no trailing slash).
 
-## Where the OpenAI key is used
 
-`backend/.env` only — never sent to the browser. Every AI-touching endpoint
-(`/api/ai/*`, and handwriting evaluation inside `/api/practice/:id/answers`) is called from
-Flask, which then calls OpenAI server-side. If `OPENAI_API_KEY` is unset:
-- `/api/ai/*` endpoints return `503 AI_UNAVAILABLE` instead of crashing.
-- Handwriting evaluation falls back to a lenient "has ink → correct" heuristic so the
-  practice loop still completes (see `docs/handwriting-recognition.md`).
 
 
