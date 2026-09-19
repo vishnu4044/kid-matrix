@@ -9,10 +9,13 @@ plan what comes next.
 → Parent Dashboard → Create Practice → Practice Ready → Hand iPad to Child → Kid Mode →
 Child Writes → AI Evaluation → Results → Progress → AI Tutor / Next Practice.
 
-See `docs/architecture.md` for the full phase-by-phase status and known gaps,
-`docs/schema.md` for the database schema, `docs/api.md` for the REST API, and
-`docs/handwriting-recognition.md` for how the evaluation layer is designed to be swapped
-for a custom ML model later.
+**New here? Start with [`docs/PROJECT_DOCUMENTATION.md`](docs/PROJECT_DOCUMENTATION.md)** — a
+complete, single-file overview: problem statement, architecture, AI integration, database,
+API, security, testing, deployment, and current known gaps.
+
+For deep dives: `docs/architecture.md` (system diagram, phase status), `docs/schema.md`
+(database), `docs/api.md` (REST API), `docs/handwriting-recognition.md` (evaluation layer and
+where a custom ML model would plug in).
 
 ## Project layout
 
