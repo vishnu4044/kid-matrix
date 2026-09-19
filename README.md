@@ -129,13 +129,4 @@ Flask, which then calls OpenAI server-side. If `OPENAI_API_KEY` is unset:
 - Handwriting evaluation falls back to a lenient "has ink → correct" heuristic so the
   practice loop still completes (see `docs/handwriting-recognition.md`).
 
-## What's implemented vs. not
 
-All 8 phases from the original spec have a working implementation, plus a Parent PIN gate on
-exiting Kid Mode, a real Settings page (name, audio toggle, PIN management, manage children),
-and basic analytics event logging (see `docs/architecture.md` for the detailed table). Backend
-has 34 pytest tests; frontend has a small Vitest suite (`ProtectedRoute`, `HandwritingCanvas`,
-`Login`). Main known gaps: no offline caching, no dedicated Playwright/Cypress e2e suite, and
-no self-serve "Kid Home" practice picker (children only enter a practice a parent already
-created) — the core loop was verified manually via Chrome browser automation against the real
-backend and a real OpenAI key during development, not just automated tests.
