@@ -9,7 +9,6 @@ services:
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-me}
       - DATABASE_URL=sqlite:////data/kid_matrix.db
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
       - UPLOAD_DIR=/uploads
       - CORS_ORIGINS=http://localhost:5173
     volumes:

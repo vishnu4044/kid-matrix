@@ -96,6 +96,27 @@ Backend on `:5000`, frontend on `:5173`. SQLite data and uploads are bind-mounte
 bakes `VITE_API_BASE_URL` in at build time (from `frontend/.env`); if you change the backend
 port or host, rebuild the frontend image.
 
+## Deploying (e.g. Railway)
+
+This is a monorepo with two independently deployable pieces (`backend/`, `frontend/`), each
+with its own `Dockerfile` and `railway.json`. On a platform like Railway that auto-detects
+builds from the repo root, you need **two separate services**, each with its "Root Directory"
+set explicitly — auto-detection from the bare repo root will fail (no single
+`package.json`/`requirements.txt`/`Dockerfile` lives there).
+
+1. **Backend service** — Root Directory: `backend`. Add a persistent volume (e.g. mounted at
+   `/data`) and set: `SECRET_KEY`, `JWT_SECRET_KEY`, `OPENAI_API_KEY`,
+   `DATABASE_URL=sqlite:////data/kid_matrix.db`, `UPLOAD_DIR=/data/uploads`,
+   `CORS_ORIGINS=<frontend public URL>`. The Dockerfile binds to Railway's dynamic `$PORT`
+   automatically. Generate a public domain for this service once it's deployed.
+2. **Frontend service** — Root Directory: `frontend`. Set `VITE_API_BASE_URL` to the backend
+   service's public URL + `/api` (e.g. `https://kid-matrix-backend.up.railway.app/api`) —
+   this must be available as a **build arg**, not just a runtime env var, since Vite bakes
+   `VITE_*` values into the static bundle at build time (see the `ARG`/`ENV` lines at the top
+   of `frontend/Dockerfile`).
+3. Once both are deployed, double-check `CORS_ORIGINS` on the backend actually matches the
+   frontend's final public URL exactly (scheme + host, no trailing slash).
+
 ## Where the OpenAI key is used
 
 `backend/.env` only — never sent to the browser. Every AI-touching endpoint
